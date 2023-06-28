@@ -13,7 +13,11 @@ protocol AnimationLayer: CALayer {
   func setupAnimations(context: LayerAnimationContext) throws
 }
 
-extension AnimationLayer {
+extension CALayer: AnimationLayer {
+    func setupAnimations(context: LayerAnimationContext) throws {
+        
+    }
+    
     public static func animation(withName name: String) -> CALayer {
         return LottieAnimationLayer(animation: LottieAnimation.named(name))
     }
