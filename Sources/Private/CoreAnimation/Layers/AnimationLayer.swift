@@ -13,6 +13,16 @@ protocol AnimationLayer: CALayer {
   func setupAnimations(context: LayerAnimationContext) throws
 }
 
+extension AnimationLayer {
+    public static func animation(withName name: String) -> CALayer {
+        return LottieAnimationLayer(animation: LottieAnimation.named(name))
+    }
+    
+    public static func animation(withPath path: String) -> CALayer {
+        return LottieAnimationLayer(animation: LottieAnimation.filepath(path))
+    }
+}
+
 // MARK: - LayerAnimationContext
 
 // Context describing the timing parameters of the current animation
