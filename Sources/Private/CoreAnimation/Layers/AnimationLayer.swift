@@ -13,18 +13,40 @@ protocol AnimationLayer: CALayer {
   func setupAnimations(context: LayerAnimationContext) throws
 }
 
-extension CALayer: AnimationLayer {
-    func setupAnimations(context: LayerAnimationContext) throws {
-        
+extension CALayer {
+
+    public static func animation(withName name: String) -> CALayer? {
+        guard let animation = LottieAnimation.named(name) else {return nil}
+        return MainThreadAnimationLayer.layer(animation: animation)
     }
     
-    public static func animation(withName name: String) -> CALayer {
-        return LottieAnimationLayer(animation: LottieAnimation.named(name))
+    public static func animation(withPath path: String) -> CALayer? {
+        guard let animation = LottieAnimation.filepath(path) else {return nil}
+        return MainThreadAnimationLayer.layer(animation: animation)
     }
-    
-    public static func animation(withPath path: String) -> CALayer {
-        return LottieAnimationLayer(animation: LottieAnimation.filepath(path))
-    }
+}
+
+
+extension MainThreadAnimationLayer {
+    static func layer(animation: LottieAnimation, imageProvider: AnimationImageProvider? = nil) -> MainThreadAnimationLayer {
+        let layer = MainThreadAnimationLayer(animation: animation, imageProvider: imageProvider ?? BundleImageProvider(bundle: Bundle.main, searchPath: nil), textProvider: DefaultTextProvider(), fontProvider: DefaultFontProvider(), maskAnimationToBounds: true, logger: LottieLogger.shared)
+            
+            let fromStartFrame = animation.startFrame
+            let toEndFrame = animation.endFrame
+            let duration = Double(abs(toEndFrame - fromStartFrame)) / animation.framerate
+            let anim = CABasicAnimation(keyPath: "currentFrame")
+            anim.speed = 1
+            anim.fromValue = fromStartFrame
+            anim.toValue = toEndFrame
+            anim.duration = duration
+            anim.fillMode = CAMediaTimingFillMode.both
+            anim.repeatCount = 1
+            anim.autoreverses = false
+            anim.isRemovedOnCompletion = false
+            layer.add(anim, forKey: "anim")
+            layer.shouldRasterize = false
+            return layer
+        }
 }
 
 // MARK: - LayerAnimationContext
