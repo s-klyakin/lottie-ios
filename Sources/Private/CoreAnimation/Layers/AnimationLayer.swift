@@ -24,6 +24,10 @@ extension CALayer {
         guard let animation = LottieAnimation.filepath(path) else {return nil}
         return MainThreadAnimationLayer.layer(animation: animation)
     }
+    
+    public static func animationLayer(_ animation: LottieAnimation) -> CALayer {
+        return MainThreadAnimationLayer.layer(animation: animation)
+    }
 }
 
 
