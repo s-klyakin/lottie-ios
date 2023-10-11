@@ -8,9 +8,16 @@ import QuartzCore
 /// A type of `CALayer` that can be used in a Lottie animation
 ///  - Layers backed by a `LayerModel` subclass should subclass `BaseCompositionLayer`
 protocol AnimationLayer: CALayer {
-  /// Instructs this layer to setup its `CAAnimation`s
-  /// using the given `LayerAnimationContext`
-  func setupAnimations(context: LayerAnimationContext) throws
+    func setupAnimations(context: LayerAnimationContext) throws
+}
+
+protocol VideoAnimationLayer {
+    func display(with frameTime: CGFloat)
+}
+
+extension CALayer:VideoAnimationLayer {
+    
+    @objc public func display(with frameTime: CGFloat) { }
 }
 
 extension CALayer {
@@ -27,6 +34,10 @@ extension CALayer {
     
     public static func animationLayer(_ animation: LottieAnimation) -> CALayer {
         return MainThreadAnimationLayer.layer(animation: animation)
+    }
+    
+    public static func coreAnimationLayer(_ animation: LottieAnimation) -> CALayer? {
+        return CoreAnimationLayer.layer(animation: animation)
     }
 }
 
@@ -51,6 +62,36 @@ extension MainThreadAnimationLayer {
             layer.shouldRasterize = false
             return layer
         }
+    
+    public override func display(with frameTime: CGFloat) {
+        self.currentFrame = frameTime
+        forceDisplayUpdate()
+    }
+}
+
+extension CoreAnimationLayer {
+    static func layer(animation: LottieAnimation, imageProvider: AnimationImageProvider? = nil) -> CoreAnimationLayer? {
+        
+        guard let layer = try? CoreAnimationLayer(animation: animation, imageProvider: imageProvider ?? BundleImageProvider(bundle: Bundle.main, searchPath: nil), textProvider: DefaultTextProvider(), fontProvider: DefaultFontProvider(), maskAnimationToBounds: true, compatibilityTrackerMode: CompatibilityTracker.Mode.track, logger: LottieLogger.shared) else {return nil}
+        
+            
+        let fromStartFrame = animation.startFrame
+        let toEndFrame = animation.endFrame
+        let duration = animation.duration//Double(abs(toEndFrame - fromStartFrame)) / animation.framerate
+        let anim = CABasicAnimation(keyPath: "currentFrame")
+        anim.speed = 1
+        anim.fromValue = fromStartFrame
+        anim.toValue = toEndFrame
+        anim.duration = duration
+        anim.fillMode = CAMediaTimingFillMode.both
+        anim.repeatCount = .infinity
+        anim.autoreverses = false
+        anim.isRemovedOnCompletion = false
+
+        layer.playAnimation(configuration: AnimationConfiguration(animationContext: AnimationContext(playFrom: fromStartFrame, playTo: toEndFrame, closure: nil), timingConfiguration: CAMediaTimingConfiguration.init(timeOffset: TimeInterval(0.0))))
+        
+        return layer
+    }
 }
 
 // MARK: - LayerAnimationContext
